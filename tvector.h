@@ -55,29 +55,95 @@ public:
     // Оператор - унарный минус
     TVector operator-() const
     {
-        TVector vec;
-        for(auto i : vec_)
+        TVector result;
+        result.vec_.resize(vec_.size());
+        for (size_t i = 0; i < vec_.size(); ++i)
         {
-            vec.vec_.push_back(-i);
+            result.vec_[i] = -vec_[i];
         }
-        return vec;
+        return result;
     }
     // Оператор вычитания векторов
-    TVector operator-(const TVector& arg) const;
-    // Оператор сложения векторов
-    TVector operator+(const TVector& arg) const;
+    TVector& operator-=(const TVector& rhs)
+    {
+        if (vec_.size() != rhs.size())
+        {
+            throw std::invalid_argument("Different size of vectors");
+        }
+        for (size_t i = 0; i < vec_.size(); ++i)
+        {
+            vec_[i] -= rhs.vec_[i];
+        }
+        return *this;
+    }
+    friend TVector operator-(TVector lhs, const TVector& rhs)
+    {
+        lhs -= rhs;
+        return lhs;
+    }
+    TVector& operator+=(const TVector& rhs)
+    {
+        if (vec_.size() != rhs.size())
+        {
+            throw std::invalid_argument("Different size of vectors");
+        }
+        for (size_t i = 0; i < vec_.size(); ++i)
+        {
+            vec_[i] += rhs.vec_[i];
+        }
+        return *this;
+    }
+    friend TVector operator+(TVector lhs, const TVector& rhs)
+    {
+        lhs += rhs;
+        return lhs;
+    }
     // Оператор умножения вектора на число
-    TVector operator*(long double arg) const;
+    TVector operator*(const long double& arg) const
+    {
+        if(vec_.empty())
+        {
+            throw std::invalid_argument("Vector is empty");
+        }
+        TVector result;
+        result.vec_.resize(vec_.size());
+        for(size_t i = 0; i < vec_.size(); ++i)
+        {
+            result.vec_[i] = vec_[i] * arg;
+        }
+        return result;
+    }
     // Оператор скалярного умножения векторов
-    double operator*(const TVector& arg) const;
+    long double operator*(const TVector& rhs) const
+    {
+        if (vec_.size() != rhs.size())
+        {
+            throw std::invalid_argument("Different size of vectors");
+        }
+        long double result = 0.0;
+        for(size_t i = 0; i < vec_.size(); ++i)
+        {
+            result += vec_[i] * rhs.vec_[i];
+        }
+        return result;
+    }
+
+
     // Оператор умножения вектора на матрицу
-//    TVector operator * (const TMatrix& arg) const; //REALIZE LATER
+    //    TVector operator * (const TMatrix& arg) const; //REALIZE LATER
     // Оператор умножения вектора на кватернион
-//    TQuaternion operator * (const TQuaternion& arg) const; //REALIZE LATER
+    //    TQuaternion operator * (const TQuaternion& arg) const; //REALIZE LATER
     // Оператор векторного умножения векторов
-    TVector operator ^ (const TVector& arg) const;
+    TVector operator^(const TVector& arg) const
+    {
+        if (vec_.size() != rhs.size())
+        {
+            throw std::invalid_argument("Different size of vectors");
+        }
+
+    }
     // Дружественная функция - оператор умножения числа на вектор
-    friend TVector operator * (double lvalue, const TVector& rvalue);
+    friend TVector operator*(double lvalue, const TVector& rvalue);
     // Функция получения модуля вектора
     inline long double norm() const
     {
@@ -112,5 +178,4 @@ public:
         os << '}';
         return os;
     }
-
 };
