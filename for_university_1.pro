@@ -7,4 +7,10 @@ SOURCES += \
         main.cpp \
 
 HEADERS += \
+    common.h \
+    operators.h \
+    tests.h \
+    tmatrix.h \
+    tquaternion.h \
+    tsymmetricmatrix.h \
     tvector.h
