@@ -109,65 +109,111 @@ public:
     }
 
     ld det() const {
-        if (n_ != m_) throw std::invalid_argument("det: matrix must be square");
-        TMatrix A = *this;
-        ld detv = 1.0L;
-        int sign = 1;
-
-        for (int col = 0; col < n_; ++col) {
-            int piv = col;
-            ld best = fabsl(A(col, col));
-            for (int r = col + 1; r < n_; ++r) {
-                ld v = fabsl(A(r, col));
-                if (v > best) { best = v; piv = r; }
-            }
-            if (best < EPS) return 0.0L;
-
-            if (piv != col) { A.swapRows(piv, col); sign = -sign; }
-
-            ld pivot = A(col, col);
-            detv *= pivot;
-
-            for (int r = col + 1; r < n_; ++r) {
-                ld f = A(r, col) / pivot;
-                A(r, col) = 0.0L;
-                for (int c = col + 1; c < n_; ++c) A(r, c) -= f * A(col, c);
-            }
+        if (n_ != m_) {
+            throw std::invalid_argument("det: matrix must be square");
         }
-        return detv * static_cast<ld>(sign);
-    }
 
-    TMatrix operator!() const {
-        if (n_ != m_) throw std::invalid_argument("inverse: matrix must be square");
-        int n = n_;
-        TMatrix A = *this;
-        TMatrix Inv = TMatrix::E(n);
+        const int size = n_;
+        TMatrix work_matrix = *this;
 
-        for (int col = 0; col < n; ++col) {
-            int piv = col;
-            ld best = fabsl(A(col, col));
-            for (int r = col + 1; r < n; ++r) {
-                ld v = fabsl(A(r, col));
-                if (v > best) { best = v; piv = r; }
+        ld determinant_value = 1.0L;
+        int determinant_sign = 1;
+
+        for (int pivot_col = 0; pivot_col < size; ++pivot_col) {
+
+            int pivot_row = pivot_col;
+            ld max_abs_value = fabsl(work_matrix(pivot_col, pivot_col));
+
+            for (int row = pivot_col + 1; row < size; ++row) {
+                ld candidate = fabsl(work_matrix(row, pivot_col));
+                if (candidate > max_abs_value) {
+                    max_abs_value = candidate;
+                    pivot_row = row;
+                }
             }
-            if (best < EPS) throw std::runtime_error("Gauss inverse: matrix is singular/degenerate");
 
-            if (piv != col) { A.swapRows(piv, col); Inv.swapRows(piv, col); }
+            if (max_abs_value < EPS) {
+                return 0.0L;
+            }
 
-            ld pivot = A(col, col);
-            for (int j = 0; j < n; ++j) { A(col, j) /= pivot; Inv(col, j) /= pivot; }
+            if (pivot_row != pivot_col) {
+                work_matrix.swapRows(pivot_row, pivot_col);
+                determinant_sign = -determinant_sign;
+            }
 
-            for (int r = 0; r < n; ++r) {
-                if (r == col) continue;
-                ld f = A(r, col);
-                if (fabsl(f) < EPS) continue;
-                for (int j = 0; j < n; ++j) {
-                    A(r, j) -= f * A(col, j);
-                    Inv(r, j) -= f * Inv(col, j);
+            const ld leading_element = work_matrix(pivot_col, pivot_col);
+            determinant_value *= leading_element;
+
+            for (int row = pivot_col + 1; row < size; ++row) {
+                const ld elimination_factor =
+                        work_matrix(row, pivot_col) / leading_element;
+
+                work_matrix(row, pivot_col) = 0.0L;
+
+                for (int col = pivot_col + 1; col < size; ++col) {
+                    work_matrix(row, col) -=
+                            elimination_factor * work_matrix(pivot_col, col);
                 }
             }
         }
-        return Inv;
+
+        return determinant_value * static_cast<ld>(determinant_sign);
+    }
+
+
+    TMatrix operator!() const {
+        if (n_ != m_) {
+            throw std::invalid_argument("inverse: matrix must be square");
+        }
+
+        const int size = n_;
+        TMatrix left_matrix = *this;
+        TMatrix right_matrix = TMatrix::E(size);
+
+        for (int pivot_col = 0; pivot_col < size; ++pivot_col) {
+
+            int pivot_row = pivot_col;
+            ld max_abs_value = fabsl(left_matrix(pivot_col, pivot_col)); // |a_ii|
+
+            for (int row = pivot_col + 1; row < size; ++row) {
+                ld candidate = fabsl(left_matrix(row, pivot_col));
+                if (candidate > max_abs_value) {
+                    max_abs_value = candidate;
+                    pivot_row = row;
+                }
+            }
+            if (max_abs_value < EPS) {
+                throw std::runtime_error(
+                            "Gauss-Jordan inverse: matrix is degenerate"
+                            );
+            }
+            if (pivot_row != pivot_col) {
+                left_matrix.swapRows(pivot_row, pivot_col);
+                right_matrix.swapRows(pivot_row, pivot_col);
+            }
+
+            ld leading_element = left_matrix(pivot_col, pivot_col);
+
+            for (int col = 0; col < size; ++col) {
+                left_matrix(pivot_col, col)  /= leading_element;
+                right_matrix(pivot_col, col) /= leading_element;
+            }
+
+            for (int row = 0; row < size; ++row) {
+
+                if (row == pivot_col) continue;
+
+                ld elimination_factor = left_matrix(row, pivot_col);
+
+                if (fabsl(elimination_factor) < EPS) continue;
+
+                for (int col = 0; col < size; ++col) {
+                    left_matrix(row, col)  -= elimination_factor * left_matrix(pivot_col, col);
+                    right_matrix(row, col) -= elimination_factor * right_matrix(pivot_col, col);
+                }
+            }
+        }
+        return right_matrix;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const TMatrix& A) {
